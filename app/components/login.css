@@ -1,0 +1,150 @@
+/* src/pages/LoginPage.css */
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+    background: #ffffff;
+    font-family:
+        system-ui,
+        -apple-system,
+        Segoe UI,
+        Roboto,
+        Arial,
+        sans-serif;
+}
+
+.login-card {
+    width: 520px;
+    max-width: 100%;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 36px 40px;
+    box-shadow: 0 10px 30px rgba(16, 24, 40, 0.12);
+    border: 1px solid rgba(16, 24, 40, 0.06);
+}
+
+.login-title {
+    margin: 0 0 22px 0;
+    text-align: center;
+    font-size: 26px;
+    font-weight: 700;
+    color: #101828;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.login-label {
+    margin-top: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #101828;
+}
+
+.login-input {
+    width: 100%;
+    height: 44px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid #eaecf0;
+    background: #f2f4f7;
+    color: #101828;
+    font-size: 14px;
+    outline: none;
+}
+
+.login-input::placeholder {
+    color: #667085;
+}
+
+.login-input:focus {
+    border-color: #98a2b3;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(152, 162, 179, 0.22);
+}
+
+.login-primary-btn {
+    margin-top: 14px;
+    height: 44px;
+    border: none;
+    border-radius: 10px;
+    background: #25364a;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.login-primary-btn:hover {
+    filter: brightness(0.95);
+}
+
+.login-primary-btn:active {
+    transform: translateY(1px);
+}
+
+.login-register {
+    margin: 16px 0 0 0;
+    text-align: center;
+    color: #101828;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.login-link-btn {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    font-weight: 700;
+    color: #1d4ed8;
+    cursor: pointer;
+}
+
+.login-link-btn:hover {
+    text-decoration: underline;
+}
+
+.login-divider {
+    margin: 22px 0;
+    height: 1px;
+    background: #eaecf0;
+}
+
+.login-quick-title {
+    margin: 0 0 12px 0;
+    color: #475467;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.login-quick-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.login-outline-btn {
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid #eaecf0;
+    background: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    color: #101828;
+    cursor: pointer;
+}
+
+.login-outline-btn:hover {
+    background: #f9fafb;
+}
+
+.login-outline-btn:active {
+    transform: translateY(1px);
+}
