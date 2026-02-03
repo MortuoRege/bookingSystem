@@ -12,7 +12,7 @@ import {
   faGrip,
   faRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
-import "./users.css";
+import "./admin-unified.css";
 
 function Icon({ name }) {
   if (name === "calendar") return <FontAwesomeIcon icon={faCalendar} />;
@@ -95,13 +95,9 @@ export default function UsersPage() {
           <AppNavLink href="/providers" icon="briefcase">
             Providers
           </AppNavLink>
-
-          <a className="nav__item" href="#appointments">
-            <span className="nav__icon" aria-hidden="true">
-              <Icon name="calendar" />
-            </span>
+          <AppNavLink href="/appointments" icon="calendar">
             Appointments
-          </a>
+          </AppNavLink>
         </nav>
 
         <div className="sidebar__spacer" />

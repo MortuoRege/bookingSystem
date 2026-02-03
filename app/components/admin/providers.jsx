@@ -13,7 +13,7 @@ import {
   faRightFromBracket,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
-import "./providers.css";
+import "./admin-unified.css";
 
 function Icon({ name }) {
   if (name === "calendar") return <FontAwesomeIcon icon={faCalendar} />;
@@ -68,6 +68,8 @@ export default function ProvidersPage() {
   const [form, setForm] = useState({
     fullName: "",
     profession: "",
+    title: "",
+    bio: "",
     email: "",
     password: "",
   });
@@ -121,6 +123,8 @@ export default function ProvidersPage() {
           fullName: form.fullName,
           email: form.email,
           specialty: form.profession,
+          title: form.title,
+          bio: form.bio,
           password: form.password,
         }),
       });
@@ -139,7 +143,14 @@ export default function ProvidersPage() {
       }
 
       await refreshStaff();
-      setForm({ fullName: "", profession: "", email: "", password: "" });
+      setForm({
+        fullName: "",
+        profession: "",
+        title: "",
+        bio: "",
+        email: "",
+        password: "",
+      });
       closeAdd();
     } catch (err) {
       console.error("Network error:", err);
@@ -186,13 +197,9 @@ export default function ProvidersPage() {
           <AppNavLink href="/providers" icon="briefcase">
             Providers
           </AppNavLink>
-
-          <a className="nav__item" href="#appointments">
-            <span className="nav__icon" aria-hidden="true">
-              <Icon name="calendar" />
-            </span>
+          <AppNavLink href="/appointments" icon="calendar">
             Appointments
-          </a>
+          </AppNavLink>
         </nav>
 
         <div className="sidebar__spacer" />
@@ -303,6 +310,35 @@ export default function ProvidersPage() {
                     value={form.profession}
                     onChange={onChange}
                     placeholder="Cardiology"
+                  />
+                </div>
+
+                <div className="field">
+                  <label className="fieldLabel" htmlFor="title">
+                    Title (Optional)
+                  </label>
+                  <input
+                    id="title"
+                    className="input"
+                    name="title"
+                    value={form.title}
+                    onChange={onChange}
+                    placeholder="MD, PhD"
+                  />
+                </div>
+
+                <div className="field">
+                  <label className="fieldLabel" htmlFor="bio">
+                    Bio (Optional)
+                  </label>
+                  <textarea
+                    id="bio"
+                    className="input"
+                    name="bio"
+                    value={form.bio}
+                    onChange={onChange}
+                    placeholder="Brief description of experience and expertise..."
+                    rows="4"
                   />
                 </div>
 

@@ -12,7 +12,7 @@ import {
   faGrip,
   faRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
-import "./AdminDashboard.css";
+import "./admin-unified.css";
 
 function Icon({ name }) {
   if (name === "calendar") return <FontAwesomeIcon icon={faCalendar} />;
@@ -79,10 +79,42 @@ function AppNavLink({ href, icon, children }) {
   );
 }
 
+// Helper function to format relative time
+function getRelativeTime(timestamp) {
+  const now = new Date();
+  const time = new Date(timestamp);
+  const diffInSeconds = Math.floor((now - time) / 1000);
+
+  if (diffInSeconds < 60) {
+    return "just now";
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  } else if (diffInSeconds < 604800) {
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days} ${days === 1 ? "day" : "days"} ago`;
+  } else {
+    const weeks = Math.floor(diffInSeconds / 604800);
+    return `${weeks} ${weeks === 1 ? "week" : "weeks"} ago`;
+  }
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalStaff, setTotalStaff] = useState(0);
+  const [totalAppointments, setTotalAppointments] = useState(0);
+  const [pendingAppointments, setPendingAppointments] = useState(0);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [systemStatus, setSystemStatus] = useState({
+    userActivity: 0,
+    providerAvailability: 0,
+    appointmentCompletion: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -95,10 +127,20 @@ export default function AdminDashboard() {
         }
 
         const data = await res.json();
-        setTotalUsers(data.total_users ?? data.users ?? 0);
-        setTotalStaff(data.total_staff ?? data.staff ?? 0);
+        setTotalUsers(data.users ?? 0);
+        setTotalStaff(data.staff ?? 0);
+        setTotalAppointments(data.appointments ?? 0);
+        setPendingAppointments(data.appointmentsByStatus?.pending ?? 0);
+        setRecentActivity(data.recentActivity ?? []);
+        setSystemStatus(data.systemStatus ?? {
+          userActivity: 0,
+          providerAvailability: 0,
+          appointmentCompletion: 0,
+        });
       } catch (e) {
         console.error("Failed to load admin stats", e);
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
@@ -118,20 +160,10 @@ export default function AdminDashboard() {
     },
     {
       title: "Total Appointments",
-      value: 3,
-      subtitle: "1 pending",
+      value: totalAppointments,
+      subtitle: `${pendingAppointments} pending`,
       icon: "calendar",
     },
-  ];
-
-  const activity = [
-    { title: "New user registered", meta: "John Doe", time: "2 hours ago" },
-    {
-      title: "Appointment booked",
-      meta: "Jane Smith with Dr. Johnson",
-      time: "5 hours ago",
-    },
-    { title: "Provider verified", meta: "Dr. Michael Chen", time: "1 day ago" },
   ];
 
   return (
@@ -154,14 +186,9 @@ export default function AdminDashboard() {
           <AppNavLink href="/providers" icon="briefcase">
             Providers
           </AppNavLink>
-
-          {/* Anchors are fine if you really want them */}
-          <a className="nav__item" href="#appointments">
-            <span className="nav__icon" aria-hidden="true">
-              <Icon name="calendar" />
-            </span>
+          <AppNavLink href="/appointments" icon="calendar">
             Appointments
-          </a>
+          </AppNavLink>
         </nav>
 
         <div className="sidebar__spacer" />
@@ -183,55 +210,69 @@ export default function AdminDashboard() {
           <h1 className="header__title">Admin Dashboard</h1>
         </header>
 
-        <section className="statsGrid">
-          {stats.map((s) => (
-            <StatCard key={s.title} {...s} />
-          ))}
-        </section>
-
-        <section className="bottomGrid">
-          <section className="card panel">
-            <div className="panel__header">
-              <h2 className="panel__title">Recent Activity</h2>
-            </div>
-
-            <div className="activityList">
-              {activity.map((a, idx) => (
-                <div key={idx} className="activityItem">
-                  <div className="activityItem__left">
-                    <div className="activityItem__title">{a.title}</div>
-                    <div className="activityItem__meta">{a.meta}</div>
-                  </div>
-                  <div className="activityItem__time">{a.time}</div>
-                </div>
+        {loading ? (
+          <div className="loadingState">Loading dashboard data...</div>
+        ) : (
+          <>
+            <section className="statsGrid">
+              {stats.map((s) => (
+                <StatCard key={s.title} {...s} />
               ))}
-            </div>
-          </section>
+            </section>
 
-          <section className="card panel">
-            <div className="panel__header">
-              <h2 className="panel__title">System Status</h2>
-            </div>
+            <section className="bottomGrid">
+              <section className="card panel">
+                <div className="panel__header">
+                  <h2 className="panel__title">Recent Activity</h2>
+                </div>
 
-            <div className="panel__body">
-              <ProgressRow
-                label="User Activity"
-                value={85}
-                colorClass="progressFill--green"
-              />
-              <ProgressRow
-                label="Provider Availability"
-                value={92}
-                colorClass="progressFill--blue"
-              />
-              <ProgressRow
-                label="Appointment Completion"
-                value={78}
-                colorClass="progressFill--purple"
-              />
-            </div>
-          </section>
-        </section>
+                <div className="activityList">
+                  {recentActivity.length > 0 ? (
+                    recentActivity.map((a, idx) => (
+                      <div key={idx} className="activityItem">
+                        <div className="activityItem__left">
+                          <div className="activityItem__title">{a.title}</div>
+                          <div className="activityItem__meta">{a.meta}</div>
+                        </div>
+                        <div className="activityItem__time">
+                          {getRelativeTime(a.timestamp)}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="emptyState">
+                      <p className="emptyState__text">No recent activity</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <section className="card panel">
+                <div className="panel__header">
+                  <h2 className="panel__title">System Status</h2>
+                </div>
+
+                <div className="panel__body">
+                  <ProgressRow
+                    label="User Activity"
+                    value={systemStatus.userActivity}
+                    colorClass="progressFill--green"
+                  />
+                  <ProgressRow
+                    label="Provider Availability"
+                    value={systemStatus.providerAvailability}
+                    colorClass="progressFill--blue"
+                  />
+                  <ProgressRow
+                    label="Appointment Completion"
+                    value={systemStatus.appointmentCompletion}
+                    colorClass="progressFill--purple"
+                  />
+                </div>
+              </section>
+            </section>
+          </>
+        )}
       </main>
     </div>
   );

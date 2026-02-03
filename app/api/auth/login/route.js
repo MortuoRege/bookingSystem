@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../../../prisma"; // adjust if your prisma export is elsewhere
+import { prisma } from "../../../prisma";
+import { cookies } from "next/headers";
 
 function jsonSafe(value) {
   return JSON.parse(
@@ -51,6 +52,15 @@ export async function POST(req) {
 
   // remove password_hash before returning
   const { password_hash, ...publicUser } = user;
+
+  // set httpOnly cookie with the user id (as string, because of BigInt)
+  const cookieStore = await cookies();
+  cookieStore.set("userId", publicUser.id.toString(), {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  });
 
   return Response.json(jsonSafe({ ok: true, user: publicUser }));
 }

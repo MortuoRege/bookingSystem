@@ -1,4 +1,4 @@
-// app/register/page.jsx
+// app/components/register.jsx
 "use client";
 
 import { useState } from "react";
@@ -7,117 +7,119 @@ import Link from "next/link";
 import "./register.css";
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-    role: "end_user",
-  });
-
-  const [error, setError] = useState("");
   const router = useRouter();
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  async function handleRegister(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    const trimmedFullName = fullName.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedFullName || !trimmedEmail || !password) {
+      setError("All fields are required.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ 
+          fullName: trimmedFullName, 
+          email: trimmedEmail, 
+          password 
+        }),
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error || "Register failed");
+        setError(data.error || "Registration failed.");
         return;
       }
 
+      // Success - redirect to login
       router.push("/login");
-    } catch {
+    } catch (err) {
+      console.error("Registration error:", err);
       setError("Network error. Is the server running?");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <div className="register-page">
-      <div
-        className="register-card"
-        role="region"
-        aria-label="Create an account"
-      >
-        <h1 className="register-title">Create an Account</h1>
+      <div className="register-card">
+        <h1 className="register-title">Create Your Account</h1>
 
-        <form className="register-form" onSubmit={handleRegister}>
-          <div className="form-group">
-            <label className="label" htmlFor="fullName">
-              Full Name
-            </label>
-            <input
-              className="input"
-              id="fullName"
-              name="fullName"
-              type="text"
-              placeholder="John Doe"
-              value={form.fullName}
-              onChange={handleChange}
-              autoComplete="name"
-              required
-            />
-          </div>
+        <form className="register-form" onSubmit={handleSubmit}>
+          <label className="register-label" htmlFor="fullName">
+            Full Name
+          </label>
+          <input
+            id="fullName"
+            className="register-input"
+            type="text"
+            placeholder="John Doe"
+            autoComplete="name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+          />
 
-          <div className="form-group">
-            <label className="label" htmlFor="email">
-              Email
-            </label>
-            <input
-              className="input"
-              id="email"
-              name="email"
-              type="email"
-              placeholder="your@email.com"
-              value={form.email}
-              onChange={handleChange}
-              autoComplete="email"
-              required
-            />
-          </div>
+          <label className="register-label" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            className="register-input"
+            type="email"
+            placeholder="your@email.com"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-          <div className="form-group">
-            <label className="label" htmlFor="password">
-              Password
-            </label>
-            <input
-              className="input"
-              id="password"
-              name="password"
-              type="password"
-              placeholder="At least 6 characters"
-              value={form.password}
-              onChange={handleChange}
-              autoComplete="new-password"
-              minLength={6}
-              required
-            />
-          </div>
+          <label className="register-label" htmlFor="password">
+            Password
+          </label>
+          <input
+            id="password"
+            className="register-input"
+            type="password"
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
-          {error && <p className="error-text">{error}</p>}
+          {error && <p className="register-error">{error}</p>}
 
-          <button className="button" type="submit">
-            Register
+          <button className="register-btn" type="submit" disabled={loading}>
+            {loading ? "Registering..." : "Register"}
           </button>
         </form>
 
-        <p className="login-text">
+        <p className="register-login">
           Already have an account?{" "}
-          <Link className="login-link" href="/login">
+          <Link className="register-link-btn" href="/login">
             Login
           </Link>
         </p>

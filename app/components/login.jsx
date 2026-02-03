@@ -26,15 +26,22 @@ export default function Page() {
 
       const data = await res.json().catch(() => ({}));
 
+      // after res.json()
+      localStorage.setItem("user", JSON.stringify(data.user));
+
       if (!res.ok) {
         setError(data.error || "Login failed");
         return;
       }
 
       const role = data?.user?.role;
-      if (role === "admin") router.push("/admin");
-      else if (role === "staff") router.push("/staff");
-      else router.push("/");
+      if (role === "admin") {
+        router.push("/admin");
+      } else if (role === "staff") {
+        router.push("/staff");
+      } else {
+        router.push("/user");
+      }
     } catch {
       setError("Network error. Is the server running?");
     }

@@ -11,7 +11,7 @@ function jsonSafe(value) {
 export async function POST(req) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { fullName, email, specialty, title, bio } = body;
+    const { fullName, email, specialty, title, bio, password } = body;
 
     if (!fullName || !email || !specialty) {
       return Response.json(
@@ -26,8 +26,23 @@ export async function POST(req) {
     const cleanTitle = title ? String(title).trim() : null;
     const cleanBio = bio ? String(bio).trim() : null;
 
-    const tempPassword = crypto.randomBytes(9).toString("base64url");
-    const passwordHash = await bcrypt.hash(tempPassword, 12);
+    // Use provided password if present, otherwise generate temp
+    let tempPassword = null;
+    let plainPassword = password ? String(password) : null;
+
+    if (!plainPassword) {
+      tempPassword = crypto.randomBytes(9).toString("base64url");
+      plainPassword = tempPassword;
+    }
+
+    if (plainPassword.length < 8) {
+      return Response.json(
+        { error: "Password must be at least 8 characters" },
+        { status: 400 },
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(plainPassword, 12);
 
     const created = await prisma.$transaction(async (tx) => {
       const user = await tx.users.create({
@@ -57,11 +72,9 @@ export async function POST(req) {
       { status: 201 },
     );
   } catch (err) {
-    // Unique constraint (email)
     if (err?.code === "P2002") {
       return Response.json({ error: "Email already exists" }, { status: 409 });
     }
-
     console.error("CREATE STAFF ERROR:", err);
     return Response.json({ error: "Server error" }, { status: 500 });
   }

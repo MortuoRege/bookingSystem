@@ -1,20 +1,21 @@
 import { prisma } from "../../../../prisma";
 
-export async function DELETE(_req, { params }) {
+export async function DELETE(_req, ctx) {
   try {
-    const idNum = Number(params.id);
+    const { id } = await ctx.params; // params is a Promise in Next 16
+
+    const idNum = Number(id);
     if (!Number.isInteger(idNum)) {
       return Response.json({ error: "Invalid id" }, { status: 400 });
     }
 
-    // If your ID column is BigInt, Prisma expects BigInt here:
-    const id = BigInt(idNum);
-
-    await prisma.users.delete({ where: { id } });
+    await prisma.users.delete({
+      where: { id: BigInt(idNum) }, // if your prisma id is BigInt
+      // where: { id: idNum },      // <-- use this instead if your prisma id is Int
+    });
 
     return Response.json({ ok: true, deletedId: idNum });
   } catch (err) {
-    // Prisma "record not found"
     if (err?.code === "P2025") {
       return Response.json({ error: "User not found" }, { status: 404 });
     }
