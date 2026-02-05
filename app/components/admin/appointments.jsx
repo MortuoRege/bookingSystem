@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { apiGet, apiPost, apiDelete } from "../../lib/api-client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -56,6 +57,20 @@ export default function AdminAppointments() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // Proper logout handler that clears both cookie and localStorage
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Logout API call failed:", err);
+    }
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
+
   useEffect(() => {
     loadAppointments();
   }, [statusFilter]);
@@ -68,7 +83,7 @@ export default function AdminAppointments() {
           ? "/api/admin/appointments"
           : `/api/admin/appointments?status=${statusFilter}`;
 
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await apiGet(url, { cache: "no-store" });
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
@@ -147,7 +162,7 @@ export default function AdminAppointments() {
         <button
           className="logout"
           type="button"
-          onClick={() => router.push("/login")}
+          onClick={handleLogout}
         >
           <span className="logout__icon" aria-hidden="true">
             <Icon name="logout" />

@@ -1,4 +1,4 @@
-// app/login/page.jsx
+// app/components/login.jsx
 "use client";
 
 import { useState } from "react";
@@ -21,19 +21,25 @@ export default function Page() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // CRITICAL: Include credentials to send/receive cookies
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json().catch(() => ({}));
-
-      // after res.json()
-      localStorage.setItem("user", JSON.stringify(data.user));
 
       if (!res.ok) {
         setError(data.error || "Login failed");
         return;
       }
 
+      // Store user data in localStorage for client-side access
+      // The JWT token is also securely stored in an httpOnly cookie by the server
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+
+      // Redirect based on role
       const role = data?.user?.role;
       if (role === "admin") {
         router.push("/admin");

@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../../../prisma"; // adjust if your prisma export is elsewhere
+import { prisma } from "../../../prisma";
+import { rateLimit, isValidEmail, isValidPassword, sanitizeInput } from "../../../lib/auth-api";
 
 function jsonSafe(value) {
   return JSON.parse(
@@ -10,7 +11,7 @@ function jsonSafe(value) {
 export async function POST(req) {
   const body = await req.json().catch(() => ({}));
 
-  const fullName = String(body.fullName ?? "").trim();
+  const fullName = sanitizeInput(String(body.fullName ?? "").trim());
   const email = String(body.email ?? "")
     .trim()
     .toLowerCase();
@@ -23,26 +24,45 @@ export async function POST(req) {
     );
   }
 
-  if (password.length < 8) {
+  // Validate email format
+  if (!isValidEmail(email)) {
     return Response.json(
-      { error: "Password must be at least 8 characters" },
+      { error: "Invalid email format" },
       { status: 400 },
+    );
+  }
+
+  // Validate password strength
+  const passwordValidation = isValidPassword(password);
+  if (!passwordValidation.valid) {
+    return Response.json(
+      { error: passwordValidation.error },
+      { status: 400 },
+    );
+  }
+
+  // Rate limiting - 3 registration attempts per hour per email
+  const limitResult = rateLimit(`register:${email}`, 3, 60 * 60 * 1000);
+
+  if (limitResult.limited) {
+    return Response.json(
+      {
+        error: "Too many registration attempts. Please try again later.",
+        retryAfter: limitResult.retryAfter,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(limitResult.retryAfter),
+        },
+      },
     );
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
 
   try {
-    // Equivalent to your "where" debug query:
-    const whereRows = await prisma.$queryRaw`
-      select current_database() as db,
-             current_schema() as schema,
-             current_user as db_user
-    `;
-    const where = whereRows?.[0] ?? null;
-
     // IMPORTANT: model/field names must match your introspected schema.prisma
-    // Your SQL used: full_name, email, password_hash, role
     const user = await prisma.users.create({
       data: {
         full_name: fullName,
@@ -58,7 +78,7 @@ export async function POST(req) {
       },
     });
 
-    return Response.json(jsonSafe({ ok: true, where, user }), { status: 201 });
+    return Response.json(jsonSafe({ ok: true, user }), { status: 201 });
   } catch (err) {
     // Unique constraint (email already exists)
     if (err?.code === "P2002") {

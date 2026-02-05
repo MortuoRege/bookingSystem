@@ -230,6 +230,11 @@
     filter: brightness(0.95);
 }
 
+.btn--primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .btn--secondary {
     background: #f3f4f6;
     color: #374151;
@@ -237,6 +242,21 @@
 
 .btn--secondary:hover {
     background: #e5e7eb;
+}
+
+.btn--outline {
+    background: white;
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.btn--outline:hover {
+    background: #f9fafb;
+}
+
+.btn--outline:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .btn--success {
@@ -260,6 +280,59 @@
 .btn--sm {
     padding: 6px 12px;
     font-size: 13px;
+}
+
+/* ============================================
+   FORM INPUTS
+   ============================================ */
+.input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: white;
+    transition: border-color 150ms ease;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #111827;
+}
+
+textarea.input {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* ============================================
+   MESSAGES
+   ============================================ */
+.successMessage {
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: #d1fae5;
+    border: 1px solid #6ee7b7;
+    border-radius: 8px;
+    color: #065f46;
+    font-size: 14px;
+}
+
+.errorMessage {
+    padding: 12px 16px;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    color: #991b1b;
+    font-size: 14px;
+}
+
+.loadingMessage {
+    padding: 12px 16px;
+    color: var(--muted);
+    font-size: 14px;
 }
 
 /* ============================================
@@ -353,9 +426,35 @@
     line-height: 1.6;
 }
 
+.profileValue--muted {
+    color: var(--muted);
+}
+
 .profileValue--description {
     line-height: 1.7;
     color: #374151;
+}
+
+.profileNote {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+}
+
+.profileActions {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #f3f4f6;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.header {
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 /* ============================================

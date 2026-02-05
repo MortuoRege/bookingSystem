@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { apiGet, apiPost, apiDelete } from "../../lib/api-client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -79,6 +80,25 @@ export default function AvailabilityPage() {
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
 
+  // Proper logout handler that clears both cookie and localStorage
+  const handleLogout = async () => {
+    try {
+      // Step 1: Call API to clear the server-side auth cookie
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Logout API call failed:", err);
+    }
+
+    // Step 2: Clear client-side data
+    localStorage.removeItem("user");
+    
+    // Step 3: Redirect to login
+    router.push("/login");
+  };
+
   const selectedDayLabel = useMemo(
     () => DAY_ORDER.find((d) => d.key === selectedDay)?.label ?? "Day",
     [selectedDay],
@@ -96,7 +116,7 @@ export default function AvailabilityPage() {
 
     (async () => {
       try {
-        const res = await fetch(`/api/staff/availability?userId=${id}`, {
+        const res = await apiGet(`/api/staff/availability?userId=${id}`, {
           cache: "no-store",
         });
         if (!res.ok) {
@@ -178,7 +198,7 @@ export default function AvailabilityPage() {
     if (!userId) return;
 
     try {
-      const res = await fetch("/api/staff/availability", {
+      const res = await apiGet("/api/staff/availability", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, day: selectedDay }),
@@ -241,7 +261,7 @@ export default function AvailabilityPage() {
         <button
           className="logout"
           type="button"
-          onClick={() => router.push("/login")}
+          onClick={handleLogout}
         >
           <span className="logout__icon" aria-hidden="true">
             <Icon name="logout" />

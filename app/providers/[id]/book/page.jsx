@@ -15,44 +15,56 @@ function Icon({ name }) {
   return null;
 }
 
-// Build days from today until the end of the current week (Sunday)
-// If less than 3 days remain, also include the next week
-function buildDaysUntilWeekEnd() {
+// Build a full month calendar view starting from the current month
+function buildMonthCalendar() {
   const result = [];
   const today = new Date();
 
-  // Get today's day of week (0 = Sunday, 6 = Saturday)
-  const todayDayOfWeek = today.getDay();
+  // Get the first day of the current month
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-  // Calculate days remaining in the current week (including today)
-  const daysRemainingThisWeek =
-    todayDayOfWeek === 0 ? 1 : 7 - todayDayOfWeek + 1;
+  // Get the last day of the current month
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-  // If less than 3 days remain in the week, include next week too
-  // This ensures users always have enough booking options
-  const totalDays =
-    daysRemainingThisWeek < 3
-      ? daysRemainingThisWeek + 7 // Add next week
-      : daysRemainingThisWeek; // Just this week
+  // Start from today (not past dates)
+  const startDate = new Date(today);
+  startDate.setHours(0, 0, 0, 0);
 
-  for (let i = 0; i < totalDays; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-
-    const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
-    const weekdayShort = d.toLocaleDateString(undefined, {
+  // Build all days from today to the end of the month
+  for (
+    let d = new Date(startDate);
+    d <= lastDayOfMonth;
+    d.setDate(d.getDate() + 1)
+  ) {
+    const currentDate = new Date(d);
+    const key = currentDate.toISOString().slice(0, 10); // YYYY-MM-DD
+    const weekdayShort = currentDate.toLocaleDateString(undefined, {
       weekday: "short",
+    });
+    const weekdayLong = currentDate.toLocaleDateString(undefined, {
+      weekday: "long",
     });
 
     result.push({
-      date: d,
+      date: currentDate,
       key,
       weekdayShort,
-      dayNumber: d.getDate(),
+      weekdayLong,
+      dayNumber: currentDate.getDate(),
+      isToday: currentDate.toDateString() === today.toDateString(),
     });
   }
 
   return result;
+}
+
+// Helper function to get the current month name and year
+function getCurrentMonthYear() {
+  const today = new Date();
+  return today.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function parseTimeToDate(baseDate, value) {
@@ -155,7 +167,7 @@ export default function BookAppointmentPage() {
         const providerData = data.provider;
         setProvider(providerData);
 
-        const upcomingDays = buildDaysUntilWeekEnd();
+        const upcomingDays = buildMonthCalendar();
         setDays(upcomingDays);
 
         // pick first day with slots as default
@@ -380,8 +392,10 @@ export default function BookAppointmentPage() {
           {error && <p className="bookingCard__error">{error}</p>}
 
           <div className="bookingCard__section">
-            <h2 className="bookingCard__sectionTitle">Select Date</h2>
-            <div className="bookingCard__datesRow">
+            <h2 className="bookingCard__sectionTitle">
+              Select Date - {getCurrentMonthYear()}
+            </h2>
+            <div className="bookingCard__calendarGrid">
               {days.map((d) => {
                 const isSelected = d.key === selectedDayKey;
                 const dayHasSlots =
@@ -391,7 +405,8 @@ export default function BookAppointmentPage() {
                 const className =
                   "bookingDateButton" +
                   (isSelected ? " bookingDateButton--selected" : "") +
-                  (!dayHasSlots ? " bookingDateButton--disabled" : "");
+                  (!dayHasSlots ? " bookingDateButton--disabled" : "") +
+                  (d.isToday ? " bookingDateButton--today" : "");
 
                 return (
                   <button
@@ -400,6 +415,7 @@ export default function BookAppointmentPage() {
                     className={className}
                     disabled={!dayHasSlots}
                     onClick={() => handleDayClick(d)}
+                    title={d.weekdayLong + ", " + d.dayNumber}
                   >
                     <span className="bookingDateButton__weekday">
                       {d.weekdayShort}

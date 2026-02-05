@@ -810,6 +810,21 @@
     font-weight: 600;
 }
 
+.fieldValue {
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text);
+    background: #f9fafb;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.fieldNote {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+}
+
 .input {
     border: 1px solid #e5e7eb;
     border-radius: 12px;

@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { apiGet, apiPost, apiDelete } from "../../lib/api-client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -116,10 +117,29 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
 
+  // Proper logout handler that clears both cookie and localStorage
+  const handleLogout = async () => {
+    try {
+      // Step 1: Call API to clear the server-side auth cookie
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Logout API call failed:", err);
+    }
+
+    // Step 2: Clear client-side data
+    localStorage.removeItem("user");
+    
+    // Step 3: Redirect to login
+    router.push("/login");
+  };
+
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/admin/stats", { cache: "no-store" });
+        const res = await apiGet("/api/admin/stats", { cache: "no-store" });
 
         if (!res.ok) {
           const text = await res.text();
@@ -132,11 +152,13 @@ export default function AdminDashboard() {
         setTotalAppointments(data.appointments ?? 0);
         setPendingAppointments(data.appointmentsByStatus?.pending ?? 0);
         setRecentActivity(data.recentActivity ?? []);
-        setSystemStatus(data.systemStatus ?? {
-          userActivity: 0,
-          providerAvailability: 0,
-          appointmentCompletion: 0,
-        });
+        setSystemStatus(
+          data.systemStatus ?? {
+            userActivity: 0,
+            providerAvailability: 0,
+            appointmentCompletion: 0,
+          },
+        );
       } catch (e) {
         console.error("Failed to load admin stats", e);
       } finally {
@@ -196,7 +218,7 @@ export default function AdminDashboard() {
         <button
           className="logout"
           type="button"
-          onClick={() => router.push("/login")}
+          onClick={handleLogout}
         >
           <span className="logout__icon" aria-hidden="true">
             <Icon name="logout" />
