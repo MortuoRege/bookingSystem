@@ -455,11 +455,31 @@ body {
     gap: 10px;
 }
 
+/* Calendar grid for month view */
+.bookingCard__calendarGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+}
+
+@media (max-width: 768px) {
+    .bookingCard__calendarGrid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .bookingCard__calendarGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
 /* Date pills */
 
 .bookingDateButton {
     min-width: 70px;
-    padding: 8px 10px;
+    padding: 10px 8px;
     border-radius: 12px;
     border: 1px solid var(--border);
     background: #f8fafc;
@@ -477,14 +497,21 @@ body {
         transform 0.08s ease;
 }
 
+.bookingDateButton:hover:not(.bookingDateButton--disabled) {
+    border-color: #111827;
+    transform: translateY(-2px);
+}
+
 .bookingDateButton__weekday {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--muted);
     margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .bookingDateButton__dayNumber {
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     font-weight: 600;
 }
 
@@ -494,9 +521,23 @@ body {
     border-color: #111827;
 }
 
+.bookingDateButton--selected .bookingDateButton__weekday {
+    color: #d1d5db;
+}
+
+.bookingDateButton--today {
+    border-color: #3b82f6;
+    border-width: 2px;
+}
+
+.bookingDateButton--today:not(.bookingDateButton--selected) {
+    background: #eff6ff;
+}
+
 .bookingDateButton--disabled {
-    opacity: 0.45;
+    opacity: 0.35;
     cursor: not-allowed;
+    background: #fafafa;
 }
 
 /* Time slots */

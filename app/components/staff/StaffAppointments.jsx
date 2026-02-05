@@ -1,6 +1,7 @@
 // app/components/staff/StaffAppointments.jsx
 "use client";
 
+import { apiGet, apiPost, apiDelete } from "../../lib/api-client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -60,6 +61,25 @@ export default function StaffAppointments() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
+  // Proper logout handler that clears both cookie and localStorage
+  const handleLogout = async () => {
+    try {
+      // Step 1: Call API to clear the server-side auth cookie
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Logout API call failed:", err);
+    }
+
+    // Step 2: Clear client-side data
+    localStorage.removeItem("user");
+    
+    // Step 3: Redirect to login
+    router.push("/login");
+  };
+
   useEffect(() => {
     loadAppointments();
   }, [statusFilter]);
@@ -99,7 +119,7 @@ export default function StaffAppointments() {
 
   async function updateAppointmentStatus(appointmentId, newStatus) {
     try {
-      const res = await fetch("/api/staff/appointments", {
+      const res = await apiGet("/api/staff/appointments", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ appointmentId, status: newStatus }),
@@ -191,7 +211,7 @@ export default function StaffAppointments() {
         <button
           className="logout"
           type="button"
-          onClick={() => router.push("/login")}
+          onClick={handleLogout}
         >
           <span className="logout__icon" aria-hidden="true">
             <Icon name="logout" />

@@ -1,6 +1,6 @@
 // app/api/appointments/route.js
 import { prisma } from "../../prisma";
-import { cookies } from "next/headers";
+import { requireAuthAPI } from "../../lib/auth-api";
 
 function jsonSafe(value) {
   return JSON.parse(
@@ -9,22 +9,23 @@ function jsonSafe(value) {
 }
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("userId")?.value;
-
-  if (!userId) {
-    return Response.json({ error: "Not authenticated" }, { status: 401 });
+  // Require authentication
+  const authResult = await requireAuthAPI();
+  if (authResult.error) {
+    return authResult.response;
   }
 
+  const user = authResult.user;
+
   const appointments = await prisma.appointments.findMany({
-    where: { customer_id: BigInt(userId) },
+    where: { customer_id: user.id },
     include: {
       users_appointments_staff_idTousers: {
         select: {
           id: true,
           full_name: true,
           email: true,
-          staff: true, // This gets the related staff record
+          staff: true,
         },
       },
     },
@@ -55,17 +56,27 @@ export async function GET() {
 
 export async function POST(req) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const { customerId, staffId, startsAt, endsAt } = body;
+    // CRITICAL FIX: Require authentication
+    const authResult = await requireAuthAPI();
+    if (authResult.error) {
+      return authResult.response;
+    }
 
-    if (!customerId || !staffId || !startsAt || !endsAt) {
+    const user = authResult.user;
+
+    const body = await req.json().catch(() => ({}));
+    // SECURITY FIX: Don't accept customerId from client - use authenticated user's ID
+    const { staffId, startsAt, endsAt } = body;
+
+    if (!staffId || !startsAt || !endsAt) {
       return Response.json(
-        { error: "customerId, staffId, startsAt, endsAt are required" },
+        { error: "staffId, startsAt, endsAt are required" },
         { status: 400 },
       );
     }
 
-    const customer_id = BigInt(customerId);
+    // CRITICAL: Use the authenticated user's ID, not client-provided customerId
+    const customer_id = user.id;
     const staff_id = BigInt(staffId);
     const starts_at = new Date(startsAt);
     const ends_at = new Date(endsAt);
@@ -83,6 +94,35 @@ export async function POST(req) {
         { error: "endsAt must be after startsAt" },
         { status: 400 },
       );
+    }
+
+    // Prevent booking appointments in the past
+    const now = new Date();
+    if (starts_at < now) {
+      return Response.json(
+        { error: "Cannot book appointments in the past" },
+        { status: 400 },
+      );
+    }
+
+    // Prevent booking appointments too far in the future (e.g., 6 months)
+    const maxFutureDate = new Date();
+    maxFutureDate.setMonth(maxFutureDate.getMonth() + 6);
+    if (starts_at > maxFutureDate) {
+      return Response.json(
+        { error: "Cannot book appointments more than 6 months in advance" },
+        { status: 400 },
+      );
+    }
+
+    // Verify staff member exists and has role 'staff'
+    const staffMember = await prisma.users.findUnique({
+      where: { id: staff_id },
+      select: { id: true, role: true },
+    });
+
+    if (!staffMember || staffMember.role !== "staff") {
+      return Response.json({ error: "Invalid staff member" }, { status: 400 });
     }
 
     const created = await prisma.appointments.create({
@@ -117,7 +157,7 @@ export async function POST(req) {
             "Time slot not available. This provider already has an appointment during this time. Please choose a different time slot.",
           code: "APPOINTMENT_OVERLAP",
         },
-        { status: 409 }, // 409 Conflict
+        { status: 409 },
       );
     }
 

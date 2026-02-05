@@ -1,6 +1,6 @@
 // app/api/admin/appointments/route.js
 import { prisma } from "../../../prisma";
-import { cookies } from "next/headers";
+import { requireRoleAPI } from "../../../lib/auth-api";
 
 function jsonSafe(value) {
   return JSON.parse(
@@ -10,24 +10,18 @@ function jsonSafe(value) {
 
 // GET all appointments (admin only)
 export async function GET(req) {
+  // Require admin role
+  const authResult = await requireRoleAPI(["admin"]);
+  if (authResult.error) {
+    return authResult.response;
+  }
+
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    if (!userId) {
-      return Response.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    // TODO: Add proper role check here
-    // const user = await prisma.users.findUnique({ where: { id: BigInt(userId) } });
-    // if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
-
     const { searchParams } = new URL(req.url);
     const statusFilter = searchParams.get("status");
 
-    const whereClause = statusFilter && statusFilter !== "all" 
-      ? { status: statusFilter } 
-      : {};
+    const whereClause =
+      statusFilter && statusFilter !== "all" ? { status: statusFilter } : {};
 
     const appointments = await prisma.appointments.findMany({
       where: whereClause,
@@ -68,7 +62,9 @@ export async function GET(req) {
         id: apt.users_appointments_staff_idTousers.id.toString(),
         name: apt.users_appointments_staff_idTousers.full_name,
         email: apt.users_appointments_staff_idTousers.email,
-        specialty: apt.users_appointments_staff_idTousers.staff?.specialty || "Specialist",
+        specialty:
+          apt.users_appointments_staff_idTousers.staff?.specialty ||
+          "Specialist",
         title: apt.users_appointments_staff_idTousers.staff?.title || "Dr.",
       },
       startsAt: apt.starts_at,
@@ -86,29 +82,31 @@ export async function GET(req) {
 
 // PATCH - Update appointment status
 export async function PATCH(req) {
+  // Require admin role
+  const authResult = await requireRoleAPI(["admin"]);
+  if (authResult.error) {
+    return authResult.response;
+  }
+
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    if (!userId) {
-      return Response.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
     const body = await req.json();
     const { appointmentId, status } = body;
 
     if (!appointmentId || !status) {
       return Response.json(
         { error: "appointmentId and status are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const validStatuses = ["pending", "approved", "cancelled", "completed"];
     if (!validStatuses.includes(status)) {
       return Response.json(
-        { error: "Invalid status. Must be: pending, approved, cancelled, or completed" },
-        { status: 400 }
+        {
+          error:
+            "Invalid status. Must be: pending, approved, cancelled, or completed",
+        },
+        { status: 400 },
       );
     }
 

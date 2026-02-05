@@ -1,6 +1,6 @@
 // app/api/staff/appointments/route.js
 import { prisma } from "../../../prisma";
-import { cookies } from "next/headers";
+import { requireRoleAPI } from "../../../lib/auth-api";
 
 function jsonSafe(value) {
   return JSON.parse(
@@ -11,19 +11,20 @@ function jsonSafe(value) {
 // GET appointments for the currently logged-in staff member
 export async function GET(req) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    if (!userId) {
-      return Response.json({ error: "Not authenticated" }, { status: 401 });
+    // Require staff role
+    const authResult = await requireRoleAPI(["staff"]);
+    if (authResult.error) {
+      return authResult.response;
     }
+
+    const user = authResult.user;
 
     const { searchParams } = new URL(req.url);
     const statusFilter = searchParams.get("status");
 
     // Build where clause - MUST include staff_id matching current user
     const whereClause = {
-      staff_id: BigInt(userId),
+      staff_id: user.id,
       ...(statusFilter && statusFilter !== "all"
         ? { status: statusFilter }
         : {}),
@@ -67,12 +68,13 @@ export async function GET(req) {
 // PATCH - Update appointment status (staff can update their own appointments)
 export async function PATCH(req) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    if (!userId) {
-      return Response.json({ error: "Not authenticated" }, { status: 401 });
+    // Require staff role
+    const authResult = await requireRoleAPI(["staff"]);
+    if (authResult.error) {
+      return authResult.response;
     }
+
+    const user = authResult.user;
 
     const body = await req.json();
     const { appointmentId, status } = body;
@@ -104,7 +106,7 @@ export async function PATCH(req) {
       return Response.json({ error: "Appointment not found" }, { status: 404 });
     }
 
-    if (appointment.staff_id.toString() !== userId) {
+    if (appointment.staff_id.toString() !== user.id.toString()) {
       return Response.json(
         { error: "You can only update your own appointments" },
         { status: 403 },
@@ -127,12 +129,13 @@ export async function PATCH(req) {
 // DELETE - Staff can delete/refuse appointments assigned to them
 export async function DELETE(req) {
   try {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    if (!userId) {
-      return Response.json({ error: "Not authenticated" }, { status: 401 });
+    // Require staff role
+    const authResult = await requireRoleAPI(["staff"]);
+    if (authResult.error) {
+      return authResult.response;
     }
+
+    const user = authResult.user;
 
     const { searchParams } = new URL(req.url);
     const appointmentId = searchParams.get("id");
@@ -153,7 +156,7 @@ export async function DELETE(req) {
       return Response.json({ error: "Appointment not found" }, { status: 404 });
     }
 
-    if (appointment.staff_id.toString() !== userId) {
+    if (appointment.staff_id.toString() !== user.id.toString()) {
       return Response.json(
         { error: "You can only delete your own appointments" },
         { status: 403 },

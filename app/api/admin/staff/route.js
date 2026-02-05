@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../prisma";
+import { requireRoleAPI } from "../../../lib/auth";
 
 function jsonSafe(value) {
   return JSON.parse(
@@ -9,6 +10,12 @@ function jsonSafe(value) {
 }
 
 export async function POST(req) {
+  // Require admin role
+  const authResult = await requireRoleAPI(["admin"]);
+  if (authResult.error) {
+    return authResult.response;
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const { fullName, email, specialty, title, bio, password } = body;

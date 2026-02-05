@@ -1,4 +1,5 @@
 import { prisma } from "../../../prisma";
+import { requireRoleAPI } from "../../../lib/auth-api";
 
 function jsonSafe(value) {
   return JSON.parse(
@@ -7,6 +8,12 @@ function jsonSafe(value) {
 }
 
 export async function GET() {
+  // Require admin role
+  const authResult = await requireRoleAPI(["admin"]);
+  if (authResult.error) {
+    return authResult.response;
+  }
+
   try {
     const [usersCount, staffCount, appointmentsCount] = await Promise.all([
       prisma.users.count({ where: { role: "user" } }),
@@ -15,12 +22,13 @@ export async function GET() {
     ]);
 
     // Get appointments by status
-    const [pendingCount, approvedCount, completedCount, cancelledCount] = await Promise.all([
-      prisma.appointments.count({ where: { status: "pending" } }),
-      prisma.appointments.count({ where: { status: "approved" } }),
-      prisma.appointments.count({ where: { status: "completed" } }),
-      prisma.appointments.count({ where: { status: "cancelled" } }),
-    ]);
+    const [pendingCount, approvedCount, completedCount, cancelledCount] =
+      await Promise.all([
+        prisma.appointments.count({ where: { status: "pending" } }),
+        prisma.appointments.count({ where: { status: "approved" } }),
+        prisma.appointments.count({ where: { status: "completed" } }),
+        prisma.appointments.count({ where: { status: "cancelled" } }),
+      ]);
 
     const userList = await prisma.users.findMany({
       where: { role: "user" },
@@ -97,21 +105,25 @@ export async function GET() {
     });
 
     // Sort by timestamp and take the 10 most recent
-    recentActivity.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    recentActivity.sort(
+      (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
+    );
     const topActivity = recentActivity.slice(0, 10);
 
     // Calculate system status metrics
     const totalProviders = staffCount;
-    const activeProviders = staffList.filter(s => s.staff?.specialty).length;
-    const providerAvailability = totalProviders > 0 
-      ? Math.round((activeProviders / totalProviders) * 100)
-      : 0;
+    const activeProviders = staffList.filter((s) => s.staff?.specialty).length;
+    const providerAvailability =
+      totalProviders > 0
+        ? Math.round((activeProviders / totalProviders) * 100)
+        : 0;
 
     const totalAppointments = appointmentsCount;
     const completedAppointments = completedCount;
-    const appointmentCompletion = totalAppointments > 0
-      ? Math.round((completedAppointments / totalAppointments) * 100)
-      : 0;
+    const appointmentCompletion =
+      totalAppointments > 0
+        ? Math.round((completedAppointments / totalAppointments) * 100)
+        : 0;
 
     const totalUsers = usersCount;
     const usersWithAppointments = await prisma.users.count({
@@ -122,9 +134,10 @@ export async function GET() {
         },
       },
     });
-    const userActivity = totalUsers > 0
-      ? Math.round((usersWithAppointments / totalUsers) * 100)
-      : 0;
+    const userActivity =
+      totalUsers > 0
+        ? Math.round((usersWithAppointments / totalUsers) * 100)
+        : 0;
 
     // Shape output
     const payload = {

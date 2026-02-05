@@ -1,14 +1,15 @@
 // app/api/appointments/[id]/route.js
-import { cookies } from "next/headers";
 import { prisma } from "../../../prisma";
+import { requireAuthAPI } from "../../../lib/auth-api";
 
 export async function DELETE(_req, { params }) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("userId")?.value;
-
-  if (!userId) {
-    return Response.json({ error: "Not authenticated" }, { status: 401 });
+  // Require authentication
+  const authResult = await requireAuthAPI();
+  if (authResult.error) {
+    return authResult.response;
   }
+
+  const user = authResult.user;
 
   const { id } = await params;
   const idNum = Number(id);
@@ -23,7 +24,7 @@ export async function DELETE(_req, { params }) {
     select: { id: true, customer_id: true },
   });
 
-  if (!appt || appt.customer_id.toString() !== userId) {
+  if (!appt || appt.customer_id.toString() !== user.id.toString()) {
     return Response.json({ error: "Appointment not found" }, { status: 404 });
   }
 

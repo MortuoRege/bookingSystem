@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { apiGet, apiPost, apiDelete } from "../../lib/api-client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -73,7 +74,7 @@ export default function StaffDashboard() {
 
         if (!userId) throw new Error("Not logged in (no user in localStorage)");
 
-        const res = await fetch(`/api/staff/stats?userId=${userId}`, {
+        const res = await apiGet(`/api/staff/stats?userId=${userId}`, {
           cache: "no-store",
         });
 

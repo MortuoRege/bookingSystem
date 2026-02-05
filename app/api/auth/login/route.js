@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../prisma";
-import { cookies } from "next/headers";
+import { setAuthCookie } from "../../../lib/auth";
+import { rateLimit, isValidEmail } from "../../../lib/auth-api";
 
 function jsonSafe(value) {
   return JSON.parse(
@@ -16,10 +17,36 @@ export async function POST(req) {
 
   const normalizedEmail = emailRaw.trim().toLowerCase();
 
+  // Validate email format
+  if (!isValidEmail(normalizedEmail)) {
+    return Response.json(
+      { error: "Invalid email format" },
+      { status: 400 },
+    );
+  }
+
   if (!normalizedEmail || !password) {
     return Response.json(
       { error: "Invalid email or password" },
       { status: 401 },
+    );
+  }
+
+  // Rate limiting - 5 attempts per 15 minutes per email
+  const limitResult = rateLimit(`login:${normalizedEmail}`, 5, 15 * 60 * 1000);
+
+  if (limitResult.limited) {
+    return Response.json(
+      {
+        error: "Too many login attempts. Please try again later.",
+        retryAfter: limitResult.retryAfter,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(limitResult.retryAfter),
+        },
+      },
     );
   }
 
@@ -53,14 +80,8 @@ export async function POST(req) {
   // remove password_hash before returning
   const { password_hash, ...publicUser } = user;
 
-  // set httpOnly cookie with the user id (as string, because of BigInt)
-  const cookieStore = await cookies();
-  cookieStore.set("userId", publicUser.id.toString(), {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  });
+  // Set secure JWT token in httpOnly cookie
+  await setAuthCookie(publicUser);
 
   return Response.json(jsonSafe({ ok: true, user: publicUser }));
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import "./providers.css"; // same CSS file you're already using
+import "./providers.css";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendar, faClock } from "@fortawesome/free-solid-svg-icons";
@@ -39,7 +39,11 @@ export default function MyAppointmentsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/appointments", { cache: "no-store" });
+        const res = await fetch("/api/appointments", { 
+          cache: "no-store",
+          // CRITICAL: Include credentials to send cookies with request
+          credentials: "include"
+        });
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
@@ -61,7 +65,11 @@ export default function MyAppointmentsPage() {
 
     setError("");
     try {
-      const res = await fetch(`/api/appointments/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/appointments/${id}`, { 
+        method: "DELETE",
+        // CRITICAL: Include credentials to send cookies with request
+        credentials: "include"
+      });
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -73,6 +81,19 @@ export default function MyAppointmentsPage() {
     } catch (e) {
       console.error(e);
       setError("Failed to cancel appointment.");
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { 
+        method: "POST",
+        credentials: "include" 
+      });
+      window.location.href = "/login";
+    } catch (e) {
+      console.error("Logout failed:", e);
+      window.location.href = "/login";
     }
   }
 
@@ -99,9 +120,9 @@ export default function MyAppointmentsPage() {
           </nav>
         </div>
         <div className="topbar__right">
-          <Link href="/login" className="btn btn--outline">
+          <button onClick={handleLogout} className="btn btn--outline">
             Logout
-          </Link>
+          </button>
         </div>
       </header>
 
