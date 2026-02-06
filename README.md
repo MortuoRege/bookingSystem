@@ -1,5 +1,11 @@
 Appointment Management System
 A secure, full-stack appointment booking application built with Next.js 14+, featuring role-based access control, JWT authentication, and comprehensive security measures.<br>
+
+**working on the project:**<br>
+**MortuoRege** Beka Buachidze <br>
+**ereklesigua** Sigu <br>
+**xBrROxx** Ibrahim Jabour <br>
+
 **Table of Contents:**
 
 Features
